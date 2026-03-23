@@ -18,13 +18,16 @@
 
 namespace GuitarAmp {
 
+/** @brief Construct PedalBoard and build initial widget list from engine state. */
 PedalBoard::PedalBoard(AudioEngine& engine, CommandHistory& history)
     : engine_(engine), history_(history) {
     rebuild_widgets();
 }
 
+/** @brief Default destructor. */
 PedalBoard::~PedalBoard() = default;
 
+/** @brief Recreate PedalWidget list to match the engine's current effect chain. */
 void PedalBoard::rebuild_widgets() {
     widgets_.clear();
     auto& effects = engine_.effects();
@@ -35,8 +38,8 @@ void PedalBoard::rebuild_widgets() {
     }
 }
 
+/** @brief Render the toolbar (add/reset) and the scrollable signal chain area. */
 void PedalBoard::render() {
-    // Toolbar
     ImGui::BeginChild("PedalToolbar", ImVec2(0, 35), true);
     render_add_pedal_menu();
     ImGui::SameLine();
@@ -66,6 +69,7 @@ void PedalBoard::render() {
     ImGui::EndChild();
 }
 
+/** @brief Render the "+ Add Pedal" button and category popup with effect menu items. */
 void PedalBoard::render_add_pedal_menu() {
     if (ImGui::Button("+ Add Pedal")) {
         ImGui::OpenPopup("AddPedalPopup");
@@ -126,6 +130,7 @@ void PedalBoard::render_add_pedal_menu() {
     }
 }
 
+/** @brief Draw the signal flow line, render each pedal widget, and handle drag-and-drop reordering. */
 void PedalBoard::render_signal_chain() {
     if (widgets_.empty()) {
         ImGui::SetCursorPos(ImVec2(
@@ -162,6 +167,31 @@ void PedalBoard::render_signal_chain() {
 
         if (widgets_[i]->render()) {
             remove_idx = i;
+        }
+
+        // Drag-and-drop reordering
+        // Use the full pedal rect as source/target
+        ImVec2 pedal_min = ImVec2(pedal_x, origin.y + 5);
+        ImVec2 pedal_max = ImVec2(pedal_x + Theme::PEDAL_WIDTH, origin.y + 5 + Theme::PEDAL_HEIGHT);
+        ImGui::SetCursorScreenPos(pedal_min);
+        char dnd_id[32];
+        snprintf(dnd_id, sizeof(dnd_id), "##dnd_%d", i);
+        ImGui::InvisibleButton(dnd_id, ImVec2(Theme::PEDAL_WIDTH, Theme::PEDAL_HEIGHT));
+
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            ImGui::SetDragDropPayload("PEDAL_REORDER", &i, sizeof(int));
+            ImGui::Text("Move %s", widgets_[i]->get_effect()->name());
+            ImGui::EndDragDropSource();
+        }
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("PEDAL_REORDER")) {
+                int source_idx = *static_cast<const int*>(payload->Data);
+                if (source_idx != i) {
+                    history_.execute(std::make_unique<ReorderEffectCommand>(engine_, source_idx, i));
+                    rebuild_widgets();
+                }
+            }
+            ImGui::EndDragDropTarget();
         }
 
         // Connection dot between pedals

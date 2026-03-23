@@ -292,18 +292,28 @@ TEST(LoadPresetCommand_UndoRedo) {
     // Currently: Delay + Reverb
     ASSERT_EQ(static_cast<int>(engine.effects().size()), 2);
     ASSERT_EQ(std::string(engine.effects()[0]->name()), std::string("Delay"));
+    ASSERT_EQ(std::string(engine.effects()[1]->name()), std::string("Reverb"));
 
     // Undo: back to Overdrive
     history.undo();
     ASSERT_EQ(static_cast<int>(engine.effects().size()), 1);
     ASSERT_EQ(std::string(engine.effects()[0]->name()), std::string("Overdrive"));
-    ASSERT_NEAR(engine.get_input_gain(), 0.5f, 0.001f);
+    ASSERT_NEAR(engine.get_input_gain(), before_in, 0.001f);
+    ASSERT_NEAR(engine.get_output_gain(), before_out, 0.001f);
+    // Verify per-effect state was restored
+    ASSERT_TRUE(engine.effects()[0]->is_enabled());
+    ASSERT_NEAR(engine.effects()[0]->get_mix(), 1.0f, 0.01f);
 
     // Redo: back to Delay + Reverb
     history.redo();
     ASSERT_EQ(static_cast<int>(engine.effects().size()), 2);
     ASSERT_EQ(std::string(engine.effects()[0]->name()), std::string("Delay"));
-    ASSERT_NEAR(engine.get_input_gain(), 0.9f, 0.001f);
+    ASSERT_EQ(std::string(engine.effects()[1]->name()), std::string("Reverb"));
+    ASSERT_NEAR(engine.get_input_gain(), after_in, 0.001f);
+    ASSERT_NEAR(engine.get_output_gain(), after_out, 0.001f);
+    // Verify per-effect state after redo
+    ASSERT_TRUE(engine.effects()[0]->is_enabled());
+    ASSERT_TRUE(engine.effects()[1]->is_enabled());
 }
 
 // ==========================================================================

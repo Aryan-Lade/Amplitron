@@ -90,7 +90,7 @@ if(NOT MSVC)
     set_source_files_properties(${IMGUI_SOURCES} PROPERTIES COMPILE_FLAGS "-w")
 endif()
 
-# --- Application Sources ---
+# --- Application Sources (platform-agnostic) ---
 set(APP_SOURCES
     src/main.cpp
     src/preset_manager.cpp
@@ -108,9 +108,17 @@ set(APP_SOURCES
     src/gui/gui_manager.cpp
     src/gui/pedal_board.cpp
     src/gui/pedal_widget.cpp
-    src/gui/file_dialog.cpp
     src/gui/command_history.cpp
 )
+
+# --- Platform-specific sources (selected at configure time) ---
+if(EMSCRIPTEN)
+    set(BACKEND_SOURCES  src/audio/audio_backend_sdl.cpp)
+    set(DIALOG_SOURCES   src/gui/file_dialog_web.cpp)
+else()
+    set(BACKEND_SOURCES  src/audio/audio_backend_portaudio.cpp)
+    set(DIALOG_SOURCES   src/gui/file_dialog_native.cpp)
+endif()
 
 # =============================================================================
 # Target configuration: Emscripten (web) vs Native (desktop)
@@ -118,7 +126,7 @@ set(APP_SOURCES
 if(EMSCRIPTEN)
 
     # --- Emscripten / WebAssembly build ---
-    add_executable(guitar-amp ${APP_SOURCES} ${IMGUI_SOURCES})
+    add_executable(guitar-amp ${APP_SOURCES} ${BACKEND_SOURCES} ${DIALOG_SOURCES} ${IMGUI_SOURCES})
 
     target_include_directories(guitar-amp PRIVATE
         ${CMAKE_SOURCE_DIR}/src
@@ -172,7 +180,7 @@ else() # NOT EMSCRIPTEN
         enable_language(RC)
     endif()
 
-    add_executable(guitar-amp ${APP_SOURCES} ${IMGUI_SOURCES} $<$<PLATFORM_ID:Windows>:${WIN_RC}>)
+    add_executable(guitar-amp ${APP_SOURCES} ${BACKEND_SOURCES} ${DIALOG_SOURCES} ${IMGUI_SOURCES} $<$<PLATFORM_ID:Windows>:${WIN_RC}>)
 
     target_include_directories(guitar-amp PRIVATE
         ${CMAKE_SOURCE_DIR}/src
@@ -218,6 +226,7 @@ else() # NOT EMSCRIPTEN
     set(CORE_SOURCES
         src/preset_manager.cpp
         src/audio/audio_engine.cpp
+        src/audio/audio_backend_portaudio.cpp
         src/audio/recorder.cpp
         src/gui/command_history.cpp
         src/audio/effects/distortion.cpp

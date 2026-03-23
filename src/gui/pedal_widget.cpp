@@ -7,18 +7,20 @@
 
 namespace GuitarAmp {
 
+/** @brief Construct PedalWidget and look up color scheme for the effect type. */
 PedalWidget::PedalWidget(std::shared_ptr<Effect> effect, int index)
     : effect_(std::move(effect)), index_(index) {
     assign_colors();
 }
 
+/** @brief Look up pedal_color_ and led_color_ from the theme's effect color table. */
 void PedalWidget::assign_colors() {
-    // SOLID: Open/Closed — color lookup via theme table, no modification needed to add effects
     const auto* entry = get_effect_color(effect_->name());
     pedal_color_ = entry->pedal_color;
     led_color_ = entry->led_color;
 }
 
+/** @brief Render the full pedal widget (body, knobs, switch, LED). @return true if remove requested. */
 bool PedalWidget::render() {
     bool should_remove = false;
 
@@ -175,6 +177,7 @@ bool PedalWidget::render() {
                 commit_param_change(i, param_value_before_drag_, new_val);
             }
             active_param_index_ = -1;
+            knob_was_active_ = false;
         }
 
         // Update active tracking for this knob
@@ -210,11 +213,17 @@ bool PedalWidget::render() {
         if (ImGui::BeginPopup(label)) {
             ImGui::Text("%s", params[i].name.c_str());
             ImGui::SetNextItemWidth(120);
-            float before_slider = params[i].value;
             ImGui::SliderFloat("##edit", &params[i].value,
                                params[i].min_val, params[i].max_val, "%.2f");
-            if (ImGui::IsItemDeactivatedAfterEdit() && params[i].value != before_slider) {
-                commit_param_change(i, before_slider, params[i].value);
+            if (ImGui::IsItemActivated()) {
+                popup_active_param_index_ = i;
+                popup_param_value_before_edit_ = params[i].value;
+            }
+            if (ImGui::IsItemDeactivatedAfterEdit() && popup_active_param_index_ == i) {
+                if (params[i].value != popup_param_value_before_edit_) {
+                    commit_param_change(i, popup_param_value_before_edit_, params[i].value);
+                }
+                popup_active_param_index_ = -1;
             }
             if (ImGui::Button("Reset")) {
                 float old_val = params[i].value;
@@ -346,9 +355,9 @@ bool PedalWidget::render() {
     return should_remove;
 }
 
+/** @brief Push a ParameterChangeCommand to the history without executing (value already applied). */
 void PedalWidget::commit_param_change(int param_index, float old_val, float new_val) {
     if (!history_) return;
-    // Value is already applied by the knob — push without executing.
     auto cmd = std::make_unique<ParameterChangeCommand>(
         effect_, param_index, old_val, new_val);
     history_->push_executed(std::move(cmd));

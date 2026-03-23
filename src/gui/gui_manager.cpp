@@ -4,12 +4,7 @@
 #include "gui/file_dialog.h"
 #include "gui/command.h"
 
-#include <SDL.h>
-#ifdef __EMSCRIPTEN__
-#include <GLES3/gl3.h>
-#else
-#include <SDL_opengl.h>
-#endif
+#include "gui/gl_setup.h"
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
 #include <imgui_impl_opengl3.h>
@@ -40,19 +35,10 @@ bool GuiManager::initialize(int width, int height) {
         return false;
     }
 
-#ifdef __EMSCRIPTEN__
-    // OpenGL ES 3.0 for WebGL 2
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#else
-    // OpenGL 3.3
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-#endif
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, GLSetup::GL_CONTEXT_PROFILE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, GLSetup::GL_MAJOR);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, GLSetup::GL_MINOR);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
@@ -126,11 +112,7 @@ bool GuiManager::initialize(int width, int height) {
     }
 
     ImGui_ImplSDL2_InitForOpenGL(window_, gl_context_);
-#ifdef __EMSCRIPTEN__
-    ImGui_ImplOpenGL3_Init("#version 300 es");
-#else
-    ImGui_ImplOpenGL3_Init("#version 330");
-#endif
+    ImGui_ImplOpenGL3_Init(GLSetup::GLSL_VERSION);
 
     pedal_board_ = std::make_unique<PedalBoard>(engine_, command_history_);
 
@@ -175,22 +157,25 @@ bool GuiManager::run_frame() {
     ImGui::NewFrame();
 
     // Keyboard shortcuts for undo/redo (Cmd+Z / Ctrl+Z, Cmd+Shift+Z / Ctrl+Y)
+    // Skip when a text input is active so Ctrl+Z works normally in text fields.
     {
         ImGuiIO& io = ImGui::GetIO();
-        bool mod = io.KeySuper || io.KeyCtrl;  // Cmd on macOS, Ctrl on Win/Linux
-        if (mod && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
-            if (command_history_.undo() && pedal_board_) {
-                pedal_board_->rebuild_widgets();
+        if (!io.WantTextInput) {
+            bool mod = io.KeySuper || io.KeyCtrl;  // Cmd on macOS, Ctrl on Win/Linux
+            if (mod && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+                if (command_history_.undo() && pedal_board_) {
+                    pedal_board_->rebuild_widgets();
+                }
             }
-        }
-        if (mod && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
-            if (command_history_.redo() && pedal_board_) {
-                pedal_board_->rebuild_widgets();
+            if (mod && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Z)) {
+                if (command_history_.redo() && pedal_board_) {
+                    pedal_board_->rebuild_widgets();
+                }
             }
-        }
-        if (mod && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Y)) {
-            if (command_history_.redo() && pedal_board_) {
-                pedal_board_->rebuild_widgets();
+            if (mod && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_Y)) {
+                if (command_history_.redo() && pedal_board_) {
+                    pedal_board_->rebuild_widgets();
+                }
             }
         }
     }
