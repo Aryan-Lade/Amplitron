@@ -3,6 +3,7 @@
 #include "common.h"
 #include "audio/audio_engine.h"
 #include "gui/command_history.h"
+#include <set>
 
 namespace GuitarAmp {
 
@@ -33,16 +34,33 @@ public:
     /** @brief Recreate PedalWidget instances from the current engine effect list. */
     void rebuild_widgets();
 
+    /** @brief Whether only enabled pedals are shown (default true). */
+    bool show_active_only() const { return show_active_only_; }
+
+    /** @brief Update which pedals are visible based on current state. */
+    void update_visible_pedals();
+
 private:
     /** @brief Render the "+ Add Pedal" button and its popup menu. */
     void render_add_pedal_menu();
 
+    /** @brief Render the amp model selector dropdown. */
+    void render_amp_selector();
+
     /** @brief Render the signal flow line, pedal widgets, and drag-and-drop targets. */
     void render_signal_chain();
+
+    /** @brief Find the index of the current AmpSimulator in the effect chain (-1 if none). */
+    int find_amp_index() const;
+
+    /** @brief Add an effect, rebuild widgets, and mark it visible. */
+    void add_effect_and_show(std::shared_ptr<Effect> effect);
 
     AudioEngine& engine_;
     CommandHistory& history_;
     std::vector<std::unique_ptr<PedalWidget>> widgets_;
+    bool show_active_only_ = true;
+    std::set<int> visible_indices_; // Indices of pedals that should be visible
 };
 
 } // namespace GuitarAmp
