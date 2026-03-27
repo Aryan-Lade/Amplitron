@@ -288,7 +288,11 @@ bool PedalWidget::render() {
                 engine_.push_param_change(index_, 0, new_val);
             }
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Click to toggle mute");
+                if (!effect_->params()[0].tooltip.empty()) {
+                    ImGui::SetTooltip("Click to toggle mute\n\n%s", effect_->params()[0].tooltip.c_str());
+                } else {
+                    ImGui::SetTooltip("Click to toggle mute");
+                }
             }
         }
     }
@@ -516,8 +520,13 @@ bool PedalWidget::render() {
 
         // Tooltip
         if (is_hovered || is_active) {
-            ImGui::SetTooltip("%s: %.2f %s\nRotate or drag to adjust\nScroll wheel also works\nShift=fine  Ctrl=coarse\nDbl-click=reset  Right-click=edit",
-                params[pi].name.c_str(), params[pi].value, params[pi].unit.c_str());
+            if (params[pi].tooltip.empty()) {
+                ImGui::SetTooltip("%s: %.2f %s\nRange: [%.2f, %.2f]\n\nRotate or drag to adjust\nScroll wheel also works\nShift=fine  Ctrl=coarse\nDbl-click=reset  Right-click=edit",
+                    params[pi].name.c_str(), params[pi].value, params[pi].unit.c_str(), params[pi].min_val, params[pi].max_val);
+            } else {
+                ImGui::SetTooltip("%s: %.2f %s\nRange: [%.2f, %.2f]\n\n%s\n\nRotate or drag to adjust\nScroll wheel also works\nShift=fine  Ctrl=coarse\nDbl-click=reset  Right-click=edit",
+                    params[pi].name.c_str(), params[pi].value, params[pi].unit.c_str(), params[pi].min_val, params[pi].max_val, params[pi].tooltip.c_str());
+            }
         }
 
         // Parameter name below knob (centered)
