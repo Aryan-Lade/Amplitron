@@ -217,7 +217,8 @@ void PedalWidget::render_knobs(ImDrawList* dl, ImVec2 p0, float pedal_width, boo
             gui_midi_->midi().learn_effect_name() == effect_->name() &&
             gui_midi_->midi().learn_param_name() == params[pi].name) {
             float time = static_cast<float>(ImGui::GetTime());
-            float alpha = (std::sin(time * 10.0f) + 1.0f) * 0.5f;
+            constexpr float LEARN_FLASH_HZ = 10.0f;
+            float alpha = (std::sin(time * 2.0f * 3.14159f * LEARN_FLASH_HZ) + 1.0f) * 0.5f;
             ImU32 outline_col = ImGui::ColorConvertFloat4ToU32(
                 ImVec4(0.2f, 0.6f, 1.0f, 0.4f + alpha * 0.6f));
             dl->AddCircle(knob_center, knob_radius + 4.0f, outline_col, 0, 3.0f);
