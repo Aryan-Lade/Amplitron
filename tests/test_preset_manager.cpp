@@ -275,7 +275,7 @@ TEST(preset_midi_mappings_roundtrip) {
     ASSERT_TRUE(loaded);
 
     const auto& loaded_mappings = midi_manager.mappings();
-    ASSERT_EQ(loaded_mappings.size(), 2);
+    ASSERT_EQ(loaded_mappings.size(), 2u);
     
     ASSERT_EQ(loaded_mappings[0].cc_number, 74);
     ASSERT_EQ(loaded_mappings[0].midi_channel, 0);
