@@ -154,7 +154,7 @@ TEST(json_preset_roundtrip_via_string) {
     ASSERT_TRUE(!json_str.empty());
     bool is_valid = true;
     try {
-        nlohmann::json::parse(json_str);
+        (void)nlohmann::json::parse(json_str);
     } catch (...) {
         is_valid = false;
     }
