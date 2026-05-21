@@ -46,6 +46,17 @@ FetchContent_Declare(
 set(JSON_BuildTests OFF CACHE INTERNAL "Disable nlohmann/json tests")
 set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
 FetchContent_MakeAvailable(nlohmann_json)
+# Mark nlohmann/json headers as SYSTEM includes so that compiler warnings
+# originating from the library (e.g. -Wfloat-equal, use of infinity) are
+# suppressed without disabling warnings for Amplitron's own code.
+if(TARGET nlohmann_json::nlohmann_json)
+    get_target_property(_nlohmann_inc nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
+    if(_nlohmann_inc)
+        set_target_properties(nlohmann_json::nlohmann_json PROPERTIES
+            INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_nlohmann_inc}"
+        )
+    endif()
+endif()
 # ---------------------------------------------------------------------------
 
 # --- Dependencies ---
