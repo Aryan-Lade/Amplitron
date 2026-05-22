@@ -46,29 +46,19 @@ FetchContent_Declare(
 set(JSON_BuildTests OFF CACHE INTERNAL "Disable nlohmann/json tests")
 set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
 FetchContent_MakeAvailable(nlohmann_json)
-# Mark nlohmann/json headers as SYSTEM includes so that compiler warnings
-# originating from the library (e.g. -Wfloat-equal, use of infinity) are
-# suppressed without disabling warnings for Amplitron's own code.
-if(TARGET nlohmann_json::nlohmann_json)
-    get_target_property(_nlohmann_inc nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
-    if(_nlohmann_inc)
-        set_target_properties(nlohmann_json::nlohmann_json PROPERTIES
-            INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_nlohmann_inc}"
-        )
-    endif()
-find_package(nlohmann_json QUIET)
-if(NOT nlohmann_json_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-        nlohmann_json
-        GIT_REPOSITORY https://github.com/nlohmann/json.git
-        GIT_TAG        v3.11.3
-        GIT_SHALLOW    TRUE
-    )
-    set(JSON_BuildTests OFF CACHE INTERNAL "Disable nlohmann/json tests")
-    set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
-    FetchContent_MakeAvailable(nlohmann_json)
-endif()
+
+# Create a wrapper interface library to mark nlohmann/json headers as SYSTEM
+# includes. This suppresses warnings originating from the library (e.g.
+# -Wfloat-equal, use of infinity) without disabling warnings for Amplitron's
+# own code. Using a wrapper instead of modifying the imported target ensures
+# cross-platform compatibility (Android NDK, Emscripten, Apple toolchains, etc.).
+add_library(nlohmann_json_system INTERFACE IMPORTED)
+set_target_properties(nlohmann_json_system PROPERTIES
+    INTERFACE_LINK_LIBRARIES nlohmann_json::nlohmann_json
+)
+target_include_directories(nlohmann_json_system SYSTEM INTERFACE
+    $<TARGET_PROPERTY:nlohmann_json::nlohmann_json,INTERFACE_INCLUDE_DIRECTORIES>
+)
 # ---------------------------------------------------------------------------
 
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/external")
@@ -329,7 +319,7 @@ if(EMSCRIPTEN)
     # OpenGL ES 3 for ImGui's OpenGL3 backend on WebGL 2
     target_compile_definitions(Amplitron PRIVATE IMGUI_IMPL_OPENGL_ES3 AMPLITRON_VERSION="${AMPLITRON_VERSION}")
 
-    target_link_libraries(Amplitron PRIVATE nlohmann_json::nlohmann_json)
+    target_link_libraries(Amplitron PRIVATE nlohmann_json_system)
 
     # Emscripten linker flags for Web Audio + AudioWorklet + SharedArrayBuffer
     target_link_options(Amplitron PRIVATE
@@ -398,7 +388,7 @@ elseif(ANDROID)
     target_include_directories(main PRIVATE ${OBOE_INCLUDE_DIRS})
 
     target_link_libraries(main PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${OBOE_LIBRARIES}
         SDL2::SDL2-static
         android
@@ -438,7 +428,7 @@ elseif(IOS)
     )
 
     target_link_libraries(Amplitron PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         SDL2::SDL2main
         SDL2::SDL2-static
         "-framework UIKit"
@@ -498,7 +488,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
     )
 
     target_link_libraries(Amplitron PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${PORTAUDIO_LIBRARIES}
         ${SDL2_LIBRARIES}
         ${OPENGL_LIBRARIES}
@@ -610,7 +600,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
     target_compile_definitions(amplitron-tests PRIVATE AMPLITRON_HAS_MIDI)
 
     target_link_libraries(amplitron-tests PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${PORTAUDIO_LIBRARIES}
         ${SDL2_LIBRARIES}
         ${OPENGL_LIBRARIES}
