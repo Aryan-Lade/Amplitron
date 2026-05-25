@@ -15,15 +15,17 @@
 using namespace Amplitron;
 
 // Helper: check if file or directory exists
-static bool file_exists(const std::string& path) {
+static bool file_exists(const std::string &path)
+{
     return std::filesystem::exists(path);
 }
 
 // Helper: read entire file to string
-static std::string read_file(const std::string& path) {
+static std::string read_file(const std::string &path)
+{
     std::ifstream f(path);
     std::string content((std::istreambuf_iterator<char>(f)),
-                         std::istreambuf_iterator<char>());
+                        std::istreambuf_iterator<char>());
     return content;
 }
 
@@ -31,12 +33,14 @@ static std::string read_file(const std::string& path) {
 // PresetManager tests
 // ============================================================
 
-TEST(preset_get_presets_dir_creates_dir) {
+TEST(preset_get_presets_dir_creates_dir)
+{
     std::string dir = PresetManager::get_presets_dir();
     ASSERT_FALSE(dir.empty());
 }
 
-TEST(preset_save_creates_file) {
+TEST(preset_save_creates_file)
+{
     AudioEngine engine;
     engine.initialize();
 
@@ -73,7 +77,8 @@ TEST(preset_save_creates_file) {
     engine.shutdown();
 }
 
-TEST(preset_save_and_load_roundtrip) {
+TEST(preset_save_and_load_roundtrip)
+{
     AudioEngine engine;
     engine.initialize();
 
@@ -85,9 +90,10 @@ TEST(preset_save_and_load_roundtrip) {
     auto eq = std::make_shared<Equalizer>();
     eq->set_enabled(true);
     // Modify a parameter
-    if (!eq->params().empty()) {
+    if (!eq->params().empty())
+    {
         eq->params()[0].value = eq->params()[0].min_val +
-            (eq->params()[0].max_val - eq->params()[0].min_val) * 0.75f;
+                                (eq->params()[0].max_val - eq->params()[0].min_val) * 0.75f;
     }
     engine.add_effect(eq);
 
@@ -135,7 +141,8 @@ TEST(preset_save_and_load_roundtrip) {
     engine2.shutdown();
 }
 
-TEST(preset_load_nonexistent_fails) {
+TEST(preset_load_nonexistent_fails)
+{
     AudioEngine engine;
     engine.initialize();
 
@@ -145,7 +152,8 @@ TEST(preset_load_nonexistent_fails) {
     engine.shutdown();
 }
 
-TEST(preset_list_finds_files) {
+TEST(preset_list_finds_files)
+{
     // Save a preset so there's at least one
     AudioEngine engine;
     engine.initialize();
@@ -158,8 +166,10 @@ TEST(preset_list_finds_files) {
     auto presets = PresetManager::list_presets();
     // Should find at least the one we just saved
     bool found = false;
-    for (auto& p : presets) {
-        if (p.find("test_list_preset.json") != std::string::npos) {
+    for (auto &p : presets)
+    {
+        if (p.find("test_list_preset.json") != std::string::npos)
+        {
             found = true;
             break;
         }
@@ -171,7 +181,8 @@ TEST(preset_list_finds_files) {
     engine.shutdown();
 }
 
-TEST(preset_save_empty_name_still_works) {
+TEST(preset_save_empty_name_still_works)
+{
     AudioEngine engine;
     engine.initialize();
     engine.add_effect(std::make_shared<Compressor>());
@@ -185,16 +196,17 @@ TEST(preset_save_empty_name_still_works) {
     engine.shutdown();
 }
 
-TEST(preset_set_presets_dir_copies_bundled_presets) {
+TEST(preset_set_presets_dir_copies_bundled_presets)
+{
     // Create a temporary test directory
     std::string test_dir = "presets/test_new_presets_dir_detailed";
 
-    // Remove if it exists from a previous run
-    #ifdef _WIN32
-        system(("rmdir /s /q \"" + test_dir + "\" >nul 2>&1").c_str());
-    #else
-        system(("rm -rf \"" + test_dir + "\" 2>/dev/null").c_str());
-    #endif
+// Remove if it exists from a previous run
+#ifdef _WIN32
+    system(("rmdir /s /q \"" + test_dir + "\" >nul 2>&1").c_str());
+#else
+    system(("rm -rf \"" + test_dir + "\" 2>/dev/null").c_str());
+#endif
 
     // Set the presets directory to our test directory
     PresetManager::set_presets_dir(test_dir);
@@ -204,8 +216,10 @@ TEST(preset_set_presets_dir_copies_bundled_presets) {
 
     // Count JSON files in the test directory
     std::vector<std::string> test_dir_files;
-    for (const auto& entry : std::filesystem::directory_iterator(test_dir)) {
-        if (entry.path().extension() == ".json") {
+    for (const auto &entry : std::filesystem::directory_iterator(test_dir))
+    {
+        if (entry.path().extension() == ".json")
+        {
             test_dir_files.push_back(entry.path().string());
         }
     }
@@ -215,10 +229,13 @@ TEST(preset_set_presets_dir_copies_bundled_presets) {
 
     // Verify at least one copied preset file exists and is readable
     bool found_valid_preset = false;
-    for (const auto& preset_path : test_dir_files) {
-        if (file_exists(preset_path)) {
+    for (const auto &preset_path : test_dir_files)
+    {
+        if (file_exists(preset_path))
+        {
             std::string content = read_file(preset_path);
-            if (!content.empty() && content.find("\"format_version\"") != std::string::npos) {
+            if (!content.empty() && content.find("\"format_version\"") != std::string::npos)
+            {
                 found_valid_preset = true;
                 break;
             }
@@ -231,7 +248,8 @@ TEST(preset_set_presets_dir_copies_bundled_presets) {
     std::filesystem::remove_all(test_dir);
 }
 
-TEST(preset_midi_mappings_roundtrip) {
+TEST(preset_midi_mappings_roundtrip)
+{
     AudioEngine engine;
     engine.initialize();
 
@@ -266,7 +284,7 @@ TEST(preset_midi_mappings_roundtrip) {
     // Verify loading
     AudioEngine engine2;
     engine2.initialize();
-    
+
     // We can't easily check internal MidiManager state from PresetManager without passing one,
     // so let's instantiate a MidiManager to see if it receives the mappings.
     MidiManager midi_manager;
@@ -274,9 +292,9 @@ TEST(preset_midi_mappings_roundtrip) {
     bool loaded = PresetManager::load_preset(path, engine2, &midi_manager);
     ASSERT_TRUE(loaded);
 
-    const auto& loaded_mappings = midi_manager.mappings();
-    ASSERT_EQ(loaded_mappings.size(), 2);
-    
+    const auto &loaded_mappings = midi_manager.mappings();
+    ASSERT_EQ(loaded_mappings.size(), 2u);
+
     ASSERT_EQ(loaded_mappings[0].cc_number, 74);
     ASSERT_EQ(loaded_mappings[0].midi_channel, 0);
     ASSERT_EQ(static_cast<int>(loaded_mappings[0].target_type), static_cast<int>(MidiTargetType::EffectParam));

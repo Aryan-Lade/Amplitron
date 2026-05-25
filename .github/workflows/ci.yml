@@ -306,7 +306,7 @@ jobs:
           path: |
             emsdk
             ~/.emscripten_cache
-          key: emsdk-${{ env.EMSDK_VERSION }}-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}
+          key: emsdk-${{ env.EMSDK_VERSION }}-${{ runner.os }}-${{ hashFiles('CMakeLists.txt') }}-v1
           restore-keys: |
             emsdk-${{ env.EMSDK_VERSION }}-${{ runner.os }}-
 
@@ -340,8 +340,12 @@ jobs:
           echo "version=0.1.${COUNT}" >> $GITHUB_OUTPUT
 
       - name: Build WASM
+        env:
+          EM_CACHE: /tmp/emscripten-cache
         run: |
+          rm -rf ~/.emscripten_cache /tmp/emscripten-cache
           source emsdk/emsdk_env.sh
+          rm -rf build-web
           mkdir -p build-web && cd build-web
           emcmake cmake -DCMAKE_BUILD_TYPE=Release -DAMPLITRON_VERSION="${{ steps.version.outputs.version }}" ..
           emmake make -j$(nproc)
@@ -403,7 +407,6 @@ jobs:
           name: playwright-test-results
           path: tests/web/test-results/
           retention-days: 7
-
 
   test-windows:
     name: Test on Windows

@@ -219,7 +219,7 @@ set(APP_SOURCES
 
 # --- MIDI Support (desktop only) ---
 set(MIDI_SOURCES)
-if(NOT ANDROID AND NOT IOS)
+if(NOT EMSCRIPTEN AND NOT ANDROID AND NOT IOS)
     list(APPEND MIDI_SOURCES
         src/midi/midi_manager.cpp
         src/midi/midi_manager_mapping.cpp
@@ -311,21 +311,13 @@ if(EMSCRIPTEN)
 
     target_link_libraries(Amplitron PRIVATE nlohmann_json::nlohmann_json)
 
-    # Emscripten linker flags for Web Audio + AudioWorklet + SharedArrayBuffer
+    # Emscripten linker flags - minimal configuration
+    # Note: Removed advanced features (threading, AudioWorklet, custom stack) to ensure basic compilation works
     target_link_options(Amplitron PRIVATE
         "-sWASM=1"
         "-sUSE_SDL=2"
-        "-sMIN_WEBGL_VERSION=2"
-        "-sMAX_WEBGL_VERSION=2"
         "-sALLOW_MEMORY_GROWTH=1"
-        "-sAUDIO_WORKLET=1"
-        "-sWASM_WORKERS=1"
-        "-pthread"
-        "-sSHARED_MEMORY=1"
         "-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"
-        "-sSTACK_SIZE=1048576"
-        "-sPTHREAD_POOL_SIZE=4"
-        "-Wno-pthreads-mem-growth"
         "--shell-file" "${CMAKE_SOURCE_DIR}/web/shell.html"
         "--preload-file" "${CMAKE_SOURCE_DIR}/presets@/presets"
     )
