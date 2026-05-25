@@ -53,9 +53,8 @@ FetchContent_MakeAvailable(nlohmann_json)
 # own code. Using a wrapper instead of modifying the imported target ensures
 # cross-platform compatibility (Android NDK, Emscripten, Apple toolchains, etc.).
 add_library(nlohmann_json_system INTERFACE IMPORTED)
-set_target_properties(nlohmann_json_system PROPERTIES
-    INTERFACE_LINK_LIBRARIES nlohmann_json::nlohmann_json
-)
+target_link_libraries(nlohmann_json_system INTERFACE nlohmann_json::nlohmann_json)
+# Mark all inherited includes as SYSTEM to suppress third-party warnings
 target_include_directories(nlohmann_json_system SYSTEM INTERFACE
     $<TARGET_PROPERTY:nlohmann_json::nlohmann_json,INTERFACE_INCLUDE_DIRECTORIES>
 )
@@ -229,7 +228,7 @@ set(APP_SOURCES
 
 # --- MIDI Support (desktop only) ---
 set(MIDI_SOURCES)
-if(NOT ANDROID AND NOT IOS)
+if(NOT EMSCRIPTEN AND NOT ANDROID AND NOT IOS)
     list(APPEND MIDI_SOURCES
         src/midi/midi_manager.cpp
         src/midi/midi_manager_mapping.cpp
