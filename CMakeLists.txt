@@ -307,7 +307,11 @@ if(EMSCRIPTEN)
     )
 
     # OpenGL ES 3 for ImGui's OpenGL3 backend on WebGL 2
-    target_compile_definitions(Amplitron PRIVATE IMGUI_IMPL_OPENGL_ES3 AMPLITRON_VERSION="${AMPLITRON_VERSION}")
+    target_compile_definitions(Amplitron PRIVATE
+        IMGUI_IMPL_OPENGL_ES3
+        AMPLITRON_VERSION="${AMPLITRON_VERSION}"
+        AMPLITRON_NO_MIDI
+    )
 
     target_link_libraries(Amplitron PRIVATE nlohmann_json::nlohmann_json)
 
