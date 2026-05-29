@@ -1,0 +1,44 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 3fe5e47..4b97ae3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -36,19 +36,29 @@ endif()
+ # Single-header C++17 JSON library used for preset serialization /
+ # deserialization.  We disable nlohmann's own tests and install rules so
+ # they don't pollute the Amplitron build.
+-find_package(nlohmann_json QUIET)
+-if(NOT nlohmann_json_FOUND)
+-    include(FetchContent)
+-    FetchContent_Declare(
+-        nlohmann_json
+-        GIT_REPOSITORY https://github.com/nlohmann/json.git
+-        GIT_TAG        v3.11.3
+-        GIT_SHALLOW    TRUE
+-    )
+-    set(JSON_BuildTests OFF CACHE INTERNAL "Disable nlohmann/json tests")
+-    set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
+-    FetchContent_MakeAvailable(nlohmann_json)
++find_package(nlohmann_json QUIET)
++if(NOT nlohmann_json_FOUND)
++    include(FetchContent)
++    FetchContent_Declare(
++        nlohmann_json
++        GIT_REPOSITORY https://github.com/nlohmann/json.git
++        GIT_TAG        v3.11.3
++        GIT_SHALLOW    TRUE
++    )
++    set(JSON_BuildTests OFF CACHE INTERNAL "Disable nlohmann/json tests")
++    set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
++    FetchContent_MakeAvailable(nlohmann_json)
+ endif()
++
++# For suppressing nlohmann_json warnings, create a simple wrapper interface library.
++# This approach avoids complex CMake generator expressions and works across all
++# versions of CMake 3.16+. The simple re-export of the target maintains compatibility.
++if(NOT TARGET nlohmann_json_system)
++    add_library(nlohmann_json_system INTERFACE)
++    target_link_libraries(nlohmann_json_system INTERFACE nlohmann_json::nlohmann_json)
++endif()
+ # ---------------------------------------------------------------------------
+ 
+ file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/external")
