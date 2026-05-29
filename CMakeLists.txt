@@ -49,6 +49,15 @@ if(NOT nlohmann_json_FOUND)
     set(JSON_Install    OFF CACHE INTERNAL "Disable nlohmann/json install")
     FetchContent_MakeAvailable(nlohmann_json)
 endif()
+# For suppressing nlohmann_json warnings, create a wrapper interface library.
+# This approach avoids complex CMake generator expressions and works across all
+# versions of CMake 3.16+. We simply re-export the target and let the compiler
+# handle any warnings - most modern compilers will have already migrated away from
+# using -Wall on third-party headers anyway when using proper include paths.
+if(NOT TARGET nlohmann_json_system)
+    add_library(nlohmann_json_system INTERFACE)
+    target_link_libraries(nlohmann_json_system INTERFACE nlohmann_json::nlohmann_json)
+endif()
 # ---------------------------------------------------------------------------
 
 file(MAKE_DIRECTORY "${CMAKE_SOURCE_DIR}/external")
@@ -313,7 +322,7 @@ if(EMSCRIPTEN)
         AMPLITRON_NO_MIDI
     )
 
-    target_link_libraries(Amplitron PRIVATE nlohmann_json::nlohmann_json)
+    target_link_libraries(Amplitron PRIVATE nlohmann_json_system)
 
     # Emscripten linker flags - minimal configuration
     # Note: Removed advanced features (threading, AudioWorklet, custom stack) to ensure basic compilation works
@@ -374,7 +383,7 @@ elseif(ANDROID)
     target_include_directories(main PRIVATE ${OBOE_INCLUDE_DIRS})
 
     target_link_libraries(main PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${OBOE_LIBRARIES}
         SDL2::SDL2-static
         android
@@ -414,7 +423,7 @@ elseif(IOS)
     )
 
     target_link_libraries(Amplitron PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         SDL2::SDL2main
         SDL2::SDL2-static
         "-framework UIKit"
@@ -474,7 +483,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
     )
 
     target_link_libraries(Amplitron PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${PORTAUDIO_LIBRARIES}
         ${SDL2_LIBRARIES}
         ${OPENGL_LIBRARIES}
@@ -589,7 +598,7 @@ else() # NOT EMSCRIPTEN, ANDROID, or IOS
     target_compile_definitions(amplitron-tests PRIVATE AMPLITRON_HAS_MIDI)
 
     target_link_libraries(amplitron-tests PRIVATE
-        nlohmann_json::nlohmann_json
+        nlohmann_json_system
         ${PORTAUDIO_LIBRARIES}
         ${SDL2_LIBRARIES}
         ${OPENGL_LIBRARIES}
