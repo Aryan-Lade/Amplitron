@@ -40,45 +40,46 @@ using namespace Amplitron;
 // Helpers
 // -----------------------------------------------------------------------
 
-static PresetData make_test_preset() {
+static PresetData make_test_preset()
+{
     PresetData p;
-    p.name         = "Test Preset";
-    p.description  = "Created by test_json_serialization";
-    p.input_gain   = 0.75f;
-    p.output_gain  = 0.85f;
+    p.name = "Test Preset";
+    p.description = "Created by test_json_serialization";
+    p.input_gain = 0.75f;
+    p.output_gain = 0.85f;
 
     {
         PresetData::EffectData fx;
-        fx.type    = "Noise Gate";
+        fx.type = "Noise Gate";
         fx.enabled = true;
-        fx.mix     = 1.0f;
-        fx.params  = {{"Threshold", -40.0f}, {"Attack", 0.5f}, {"Release", 50.0f}};
+        fx.mix = 1.0f;
+        fx.params = {{"Threshold", -40.0f}, {"Attack", 0.5f}, {"Release", 50.0f}};
         p.effects.push_back(fx);
     }
     {
         PresetData::EffectData fx;
-        fx.type    = "Overdrive";
+        fx.type = "Overdrive";
         fx.enabled = false;
-        fx.mix     = 0.8f;
-        fx.params  = {{"Drive", 2.5f}, {"Tone", 0.6f}, {"Level", 0.7f}};
+        fx.mix = 0.8f;
+        fx.params = {{"Drive", 2.5f}, {"Tone", 0.6f}, {"Level", 0.7f}};
         p.effects.push_back(fx);
     }
     {
         PresetData::EffectData fx;
-        fx.type     = "Cabinet";
-        fx.enabled  = true;
-        fx.mix      = 1.0f;
+        fx.type = "Cabinet";
+        fx.enabled = true;
+        fx.mix = 1.0f;
         fx.metadata = {{"ir_path", "/some/path/cabinet.wav"}};
         p.effects.push_back(fx);
     }
 
     MidiMapping m;
-    m.cc_number    = 74;
+    m.cc_number = 74;
     m.midi_channel = 0;
-    m.target_type  = MidiTargetType::EffectParam;
-    m.mode         = MidiMappingMode::Continuous;
-    m.effect_name  = "Overdrive";
-    m.param_name   = "Drive";
+    m.target_type = MidiTargetType::EffectParam;
+    m.mode = MidiMappingMode::Continuous;
+    m.effect_name = "Overdrive";
+    m.param_name = "Drive";
     p.midi_mappings.push_back(m);
 
     return p;
@@ -88,12 +89,13 @@ static PresetData make_test_preset() {
 // [AC2] Effect parameter serialization
 // -----------------------------------------------------------------------
 
-TEST(json_effect_data_to_json_contains_expected_keys) {
+TEST(json_effect_data_to_json_contains_expected_keys)
+{
     PresetData::EffectData fx;
-    fx.type    = "Reverb";
+    fx.type = "Reverb";
     fx.enabled = true;
-    fx.mix     = 0.5f;
-    fx.params  = {{"Decay", 0.8f}, {"Damp", 0.3f}, {"Level", 0.4f}};
+    fx.mix = 0.5f;
+    fx.params = {{"Decay", 0.8f}, {"Damp", 0.3f}, {"Level", 0.4f}};
 
     nlohmann::json j;
     Amplitron::to_json(j, fx);
@@ -108,12 +110,13 @@ TEST(json_effect_data_to_json_contains_expected_keys) {
     ASSERT_NEAR(j["params"]["Decay"].get<float>(), 0.8f, 0.001f);
 }
 
-TEST(json_effect_data_roundtrip) {
+TEST(json_effect_data_roundtrip)
+{
     PresetData::EffectData original;
-    original.type    = "Equalizer";
+    original.type = "Equalizer";
     original.enabled = true;
-    original.mix     = 0.9f;
-    original.params  = {{"Bass", 3.0f}, {"Mid", -2.0f}, {"Treble", 1.5f}};
+    original.mix = 0.9f;
+    original.params = {{"Bass", 3.0f}, {"Mid", -2.0f}, {"Treble", 1.5f}};
     original.metadata = {{"custom_key", "custom_value"}};
 
     // Serialise
@@ -124,13 +127,14 @@ TEST(json_effect_data_roundtrip) {
     PresetData::EffectData restored;
     Amplitron::from_json(j, restored);
 
-    ASSERT_EQ(restored.type,    original.type);
+    ASSERT_EQ(restored.type, original.type);
     ASSERT_EQ(restored.enabled, original.enabled);
-    ASSERT_NEAR(restored.mix,   original.mix, 0.001f);
+    ASSERT_NEAR(restored.mix, original.mix, 0.001f);
     ASSERT_EQ(restored.params.size(), original.params.size());
 
     // Verify each parameter
-    for (size_t i = 0; i < original.params.size(); ++i) {
+    for (size_t i = 0; i < original.params.size(); ++i)
+    {
         ASSERT_EQ(restored.params[i].first, original.params[i].first);
         ASSERT_NEAR(restored.params[i].second, original.params[i].second, 0.001f);
     }
@@ -144,7 +148,8 @@ TEST(json_effect_data_roundtrip) {
 // [AC3] Full preset round-trip (string  →  parse  →  re-serialise)
 // -----------------------------------------------------------------------
 
-TEST(json_preset_roundtrip_via_string) {
+TEST(json_preset_roundtrip_via_string)
+{
     PresetData original = make_test_preset();
 
     // Serialise to JSON string
@@ -153,9 +158,12 @@ TEST(json_preset_roundtrip_via_string) {
     // Validate it is parseable as valid JSON
     ASSERT_TRUE(!json_str.empty());
     bool is_valid = true;
-    try {
-        nlohmann::json::parse(json_str);
-    } catch (...) {
+    try
+    {
+        (void)nlohmann::json::parse(json_str);
+    }
+    catch (...)
+    {
         is_valid = false;
     }
     ASSERT_TRUE(is_valid);
@@ -166,40 +174,41 @@ TEST(json_preset_roundtrip_via_string) {
     ASSERT_TRUE(ok);
 
     // Top-level fields
-    ASSERT_EQ(restored.name,        original.name);
+    ASSERT_EQ(restored.name, original.name);
     ASSERT_EQ(restored.description, original.description);
-    ASSERT_NEAR(restored.input_gain,  original.input_gain,  0.001f);
+    ASSERT_NEAR(restored.input_gain, original.input_gain, 0.001f);
     ASSERT_NEAR(restored.output_gain, original.output_gain, 0.001f);
 
     // Effect chain length
     ASSERT_EQ(restored.effects.size(), original.effects.size());
 
     // First effect: Noise Gate
-    ASSERT_EQ(restored.effects[0].type,    std::string("Noise Gate"));
+    ASSERT_EQ(restored.effects[0].type, std::string("Noise Gate"));
     ASSERT_EQ(restored.effects[0].enabled, true);
-    ASSERT_NEAR(restored.effects[0].mix,   1.0f, 0.001f);
+    ASSERT_NEAR(restored.effects[0].mix, 1.0f, 0.001f);
     ASSERT_EQ(restored.effects[0].params.size(), 3u);
     ASSERT_NEAR(restored.effects[0].params[0].second, -40.0f, 0.001f);
 
     // Second effect: Overdrive (disabled)
-    ASSERT_EQ(restored.effects[1].type,    std::string("Overdrive"));
+    ASSERT_EQ(restored.effects[1].type, std::string("Overdrive"));
     ASSERT_EQ(restored.effects[1].enabled, false);
-    ASSERT_NEAR(restored.effects[1].mix,   0.8f, 0.001f);
+    ASSERT_NEAR(restored.effects[1].mix, 0.8f, 0.001f);
 
     // Third effect: Cabinet with IR metadata
-    ASSERT_EQ(restored.effects[2].type,    std::string("Cabinet"));
+    ASSERT_EQ(restored.effects[2].type, std::string("Cabinet"));
     ASSERT_EQ(restored.effects[2].metadata.count("ir_path"), 1u);
     ASSERT_EQ(restored.effects[2].metadata.at("ir_path"),
               std::string("/some/path/cabinet.wav"));
 
     // MIDI mappings
     ASSERT_EQ(restored.midi_mappings.size(), 1u);
-    ASSERT_EQ(restored.midi_mappings[0].cc_number,  74);
+    ASSERT_EQ(restored.midi_mappings[0].cc_number, 74);
     ASSERT_EQ(restored.midi_mappings[0].effect_name, std::string("Overdrive"));
-    ASSERT_EQ(restored.midi_mappings[0].param_name,  std::string("Drive"));
+    ASSERT_EQ(restored.midi_mappings[0].param_name, std::string("Drive"));
 }
 
-TEST(json_roundtrip_via_file) {
+TEST(json_roundtrip_via_file)
+{
     PresetData original = make_test_preset();
     original.name = "FileRoundtripTest";
 
@@ -221,11 +230,11 @@ TEST(json_roundtrip_via_file) {
     ASSERT_TRUE(loaded);
 
     ASSERT_EQ(static_cast<int>(engine.effects().size()), 2); // IR effect skipped (no real IR)
-    ASSERT_NEAR(engine.get_input_gain(),  0.75f, 0.01f);
+    ASSERT_NEAR(engine.get_input_gain(), 0.75f, 0.01f);
     ASSERT_NEAR(engine.get_output_gain(), 0.85f, 0.01f);
 
     // Verify the legacy linear preset correctly wired the AudioGraph!
-    const auto& graph = engine.graph();
+    const auto &graph = engine.graph();
     ASSERT_EQ(graph.get_nodes().size(), 3u); // Input -> Noise Gate -> Overdrive
     ASSERT_EQ(graph.get_links().size(), 2u);
     ASSERT_TRUE(graph.get_nodes().front().is_graph_input);
@@ -239,7 +248,8 @@ TEST(json_roundtrip_via_file) {
 // [AC3] Proof-of-concept: dump default signal chain as JSON to stdout
 // -----------------------------------------------------------------------
 
-TEST(json_preset_signal_chain_dump) {
+TEST(json_preset_signal_chain_dump)
+{
     // Build the default signal chain that Amplitron starts with
     AudioEngine engine;
     engine.initialize();
@@ -256,16 +266,18 @@ TEST(json_preset_signal_chain_dump) {
 
     // Collect state into a PresetData (same logic as PresetManager::save_preset)
     PresetData state;
-    state.name        = "Default Signal Chain";
+    state.name = "Default Signal Chain";
     state.description = "Proof-of-concept dump for issue #96";
-    state.input_gain  = engine.get_input_gain();
+    state.input_gain = engine.get_input_gain();
     state.output_gain = engine.get_output_gain();
-    for (auto& fx : engine.effects()) {
+    for (auto &fx : engine.effects())
+    {
         PresetData::EffectData fd;
-        fd.type    = fx->name();
+        fd.type = fx->name();
         fd.enabled = fx->is_enabled();
-        fd.mix     = fx->get_mix();
-        for (auto& p : fx->params()) {
+        fd.mix = fx->get_mix();
+        for (auto &p : fx->params())
+        {
             fd.params.push_back({p.name, p.value});
         }
         state.effects.push_back(fd);
@@ -286,7 +298,8 @@ TEST(json_preset_signal_chain_dump) {
     ASSERT_EQ(j["effects"].size(), 6u);
 
     // Every effect block must have type, enabled, mix, params
-    for (auto& jfx : j["effects"]) {
+    for (auto &jfx : j["effects"])
+    {
         ASSERT_TRUE(jfx.contains("type"));
         ASSERT_TRUE(jfx.contains("enabled"));
         ASSERT_TRUE(jfx.contains("mix"));
@@ -298,13 +311,15 @@ TEST(json_preset_signal_chain_dump) {
     bool ok = from_json_ext(json_str, restored);
     ASSERT_TRUE(ok);
     ASSERT_EQ(restored.effects.size(), state.effects.size());
-    for (size_t i = 0; i < state.effects.size(); ++i) {
-        ASSERT_EQ(restored.effects[i].type,    state.effects[i].type);
+    for (size_t i = 0; i < state.effects.size(); ++i)
+    {
+        ASSERT_EQ(restored.effects[i].type, state.effects[i].type);
         ASSERT_EQ(restored.effects[i].enabled, state.effects[i].enabled);
-        ASSERT_NEAR(restored.effects[i].mix,   state.effects[i].mix, 0.001f);
+        ASSERT_NEAR(restored.effects[i].mix, state.effects[i].mix, 0.001f);
         ASSERT_EQ(restored.effects[i].params.size(),
                   state.effects[i].params.size());
-        for (size_t p = 0; p < state.effects[i].params.size(); ++p) {
+        for (size_t p = 0; p < state.effects[i].params.size(); ++p)
+        {
             ASSERT_EQ(restored.effects[i].params[p].first,
                       state.effects[i].params[p].first);
             ASSERT_NEAR(restored.effects[i].params[p].second,
@@ -315,16 +330,18 @@ TEST(json_preset_signal_chain_dump) {
     engine.shutdown();
 }
 
-TEST(json_invalid_json_returns_false) {
+TEST(json_invalid_json_returns_false)
+{
     PresetData preset;
     bool ok = from_json_ext("{ this is not valid json !!!", preset);
     ASSERT_FALSE(ok);
 }
 
-TEST(json_empty_effects_list_roundtrip) {
+TEST(json_empty_effects_list_roundtrip)
+{
     PresetData original;
-    original.name        = "Empty Chain";
-    original.input_gain  = 0.5f;
+    original.name = "Empty Chain";
+    original.input_gain = 0.5f;
     original.output_gain = 0.5f;
     // No effects, no midi mappings
 
@@ -337,7 +354,8 @@ TEST(json_empty_effects_list_roundtrip) {
     ASSERT_EQ(restored.midi_mappings.size(), 0u);
 }
 
-TEST(json_can_load_existing_factory_presets) {
+TEST(json_can_load_existing_factory_presets)
+{
     // Verify the new parser is backward-compatible with the existing preset files
     const std::vector<std::string> factory_presets = {
         "presets/01_Sparkling_Clean.json",
@@ -347,12 +365,14 @@ TEST(json_can_load_existing_factory_presets) {
 
     int loaded_count = 0;
 
-    for (const auto& path : factory_presets) {
+    for (const auto &path : factory_presets)
+    {
         std::ifstream f(path);
-        if (!f.is_open()) continue; // Skip if not found in test environment
+        if (!f.is_open())
+            continue; // Skip if not found in test environment
 
         std::string content((std::istreambuf_iterator<char>(f)),
-                             std::istreambuf_iterator<char>());
+                            std::istreambuf_iterator<char>());
         f.close();
 
         PresetData preset;
@@ -372,10 +392,11 @@ TEST(json_can_load_existing_factory_presets) {
 // [NEW] Autosave and Crash Recovery Engine State Roundtrip
 // -----------------------------------------------------------------------
 
-TEST(json_audio_engine_autosave_roundtrip) {
+TEST(json_audio_engine_autosave_roundtrip)
+{
     AudioEngine engine;
     engine.initialize();
-    
+
     // 1. Setup a specific chain state
     auto distortion = std::make_shared<Distortion>();
     distortion->set_enabled(true);
@@ -401,10 +422,10 @@ TEST(json_audio_engine_autosave_roundtrip) {
 
     // 5. Assert that everything was restored perfectly
     ASSERT_TRUE(distortion->is_enabled());
-    ASSERT_NEAR(distortion->get_mix(), 0.85f, 0.001f); 
+    ASSERT_NEAR(distortion->get_mix(), 0.85f, 0.001f);
 
     ASSERT_FALSE(reverb->is_enabled());
     ASSERT_NEAR(reverb->get_mix(), 0.2f, 0.001f);
-    
+
     engine.shutdown();
 }
