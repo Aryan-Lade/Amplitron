@@ -192,7 +192,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Dependencies
-        run: brew install portaudio sdl2 rtmidi
+        run: brew install portaudio sdl2 rtmidi nlohmann-json
 
       - name: Setup External Dependencies
         run: |
