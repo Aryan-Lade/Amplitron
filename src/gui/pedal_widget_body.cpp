@@ -16,6 +16,7 @@
 namespace Amplitron
 {
 
+void PedalWidget::render_amp_cabinet(ImDrawList* dl, ImVec2 p0, ImVec2 p1, float pedal_width, [[maybe_unused]] float pedal_height, float zoom) {
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
     extern "C"
