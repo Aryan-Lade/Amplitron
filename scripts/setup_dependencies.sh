@@ -13,6 +13,30 @@ echo "Project root: $PROJECT_ROOT"
 
 mkdir -p "$EXTERNAL_DIR"
 
+# Retry function for curl downloads
+download_with_retry() {
+    local url="$1"
+    local output="$2"
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        echo "Downloading from $url (attempt $attempt/$max_attempts)..."
+        if curl -fsSL -o "$output" "$url"; then
+            echo "Successfully downloaded: $output"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        if [ $attempt -le $max_attempts ]; then
+            echo "Download failed, retrying in 2 seconds..."
+            sleep 2
+        fi
+    done
+    
+    echo "ERROR: Failed to download $url after $max_attempts attempts"
+    return 1
+}
+
 # --- Dear ImGui ---
 IMGUI_DIR="$EXTERNAL_DIR/imgui"
 IMGUI_VERSION="v1.90.1"
@@ -33,10 +57,10 @@ if [ ! -f "$KISS_FFT_DIR/kiss_fft.c" ]; then
     echo ""
     echo "Fetching kiss_fft..."
     mkdir -p "$KISS_FFT_DIR"
-    curl -fsSL -o "$KISS_FFT_DIR/kiss_fft.h"       https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.h
-    curl -fsSL -o "$KISS_FFT_DIR/kiss_fft.c"       https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.c
-    curl -fsSL -o "$KISS_FFT_DIR/_kiss_fft_guts.h"  https://raw.githubusercontent.com/mborgerding/kissfft/master/_kiss_fft_guts.h
-    curl -fsSL -o "$KISS_FFT_DIR/kiss_fft_log.h"    https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft_log.h
+    download_with_retry "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.h"       "$KISS_FFT_DIR/kiss_fft.h" || exit 1
+    download_with_retry "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.c"       "$KISS_FFT_DIR/kiss_fft.c" || exit 1
+    download_with_retry "https://raw.githubusercontent.com/mborgerding/kissfft/master/_kiss_fft_guts.h"  "$KISS_FFT_DIR/_kiss_fft_guts.h" || exit 1
+    download_with_retry "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft_log.h"    "$KISS_FFT_DIR/kiss_fft_log.h" || exit 1
     echo "kiss_fft fetched successfully."
 else
     echo "kiss_fft already present, skipping."
@@ -46,7 +70,7 @@ fi
 if [ ! -f "$EXTERNAL_DIR/dr_wav.h" ]; then
     echo ""
     echo "Fetching dr_wav.h..."
-    curl -fsSL -o "$EXTERNAL_DIR/dr_wav.h" https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h
+    download_with_retry "https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h" "$EXTERNAL_DIR/dr_wav.h" || exit 1
     echo "dr_wav.h fetched successfully."
 else
     echo "dr_wav.h already present, skipping."
@@ -56,8 +80,8 @@ fi
 if [ ! -f "$EXTERNAL_DIR/nanosvg.h" ] || [ ! -f "$EXTERNAL_DIR/nanosvgrast.h" ]; then
     echo ""
     echo "Fetching nanosvg..."
-    curl -fsSL -o "$EXTERNAL_DIR/nanosvg.h"     https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvg.h
-    curl -fsSL -o "$EXTERNAL_DIR/nanosvgrast.h" https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvgrast.h
+    download_with_retry "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvg.h"     "$EXTERNAL_DIR/nanosvg.h" || exit 1
+    download_with_retry "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvgrast.h" "$EXTERNAL_DIR/nanosvgrast.h" || exit 1
     echo "nanosvg fetched successfully."
 else
     echo "nanosvg already present, skipping."
