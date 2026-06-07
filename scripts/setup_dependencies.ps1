@@ -14,6 +14,32 @@ if (-Not (Test-Path $EXTERNAL_DIR)) {
     New-Item -ItemType Directory -Path $EXTERNAL_DIR | Out-Null
 }
 
+# Retry function for web downloads
+function Invoke-WebRequestWithRetry {
+    param(
+        [string]$Uri,
+        [string]$OutFile,
+        [int]$MaxAttempts = 3
+    )
+    
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        Write-Host "Downloading from $Uri (attempt $attempt/$MaxAttempts)..." -ForegroundColor Gray
+        try {
+            Invoke-WebRequest -Uri $Uri -OutFile $OutFile -TimeoutSec 30
+            Write-Host "Successfully downloaded: $OutFile" -ForegroundColor Green
+            return $true
+        } catch {
+            if ($attempt -lt $MaxAttempts) {
+                Write-Host "Download failed: $_`nRetrying in 2 seconds..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 2
+            } else {
+                Write-Host "ERROR: Failed to download $Uri after $MaxAttempts attempts" -ForegroundColor Red
+                return $false
+            }
+        }
+    }
+}
+
 # --- Dear ImGui ---
 $IMGUI_DIR = Join-Path $EXTERNAL_DIR "imgui"
 $IMGUI_VERSION = "v1.90.1"
@@ -36,10 +62,10 @@ $KISS_FFT_DIR = Join-Path $EXTERNAL_DIR "kiss_fft"
 if (-Not (Test-Path (Join-Path $KISS_FFT_DIR "kiss_fft.c"))) {
     Write-Host "`nFetching kiss_fft..." -ForegroundColor Yellow
     New-Item -ItemType Directory -Path $KISS_FFT_DIR -Force | Out-Null
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.h" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft.h")
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.c" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft.c")
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/_kiss_fft_guts.h" -OutFile (Join-Path $KISS_FFT_DIR "_kiss_fft_guts.h")
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft_log.h" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft_log.h")
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.h" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft.h"))) { exit 1 }
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft.c" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft.c"))) { exit 1 }
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/_kiss_fft_guts.h" -OutFile (Join-Path $KISS_FFT_DIR "_kiss_fft_guts.h"))) { exit 1 }
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/mborgerding/kissfft/master/kiss_fft_log.h" -OutFile (Join-Path $KISS_FFT_DIR "kiss_fft_log.h"))) { exit 1 }
     Write-Host "kiss_fft fetched successfully." -ForegroundColor Green
 } else {
     Write-Host "kiss_fft already present, skipping." -ForegroundColor Green
@@ -50,7 +76,7 @@ $DR_WAV_PATH = Join-Path $EXTERNAL_DIR "dr_wav.h"
 
 if (-Not (Test-Path $DR_WAV_PATH)) {
     Write-Host "`nFetching dr_wav.h..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h" -OutFile $DR_WAV_PATH
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h" -OutFile $DR_WAV_PATH)) { exit 1 }
     Write-Host "dr_wav.h fetched successfully." -ForegroundColor Green
 } else {
     Write-Host "dr_wav.h already present, skipping." -ForegroundColor Green
@@ -62,8 +88,8 @@ $NANOSVG_RAST_PATH = Join-Path $EXTERNAL_DIR "nanosvgrast.h"
 
 if ((-Not (Test-Path $NANOSVG_PATH)) -or (-Not (Test-Path $NANOSVG_RAST_PATH))) {
     Write-Host "`nFetching nanosvg..." -ForegroundColor Yellow
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvg.h" -OutFile (Join-Path $EXTERNAL_DIR "nanosvg.h")
-    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvgrast.h" -OutFile (Join-Path $EXTERNAL_DIR "nanosvgrast.h")
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvg.h" -OutFile (Join-Path $EXTERNAL_DIR "nanosvg.h"))) { exit 1 }
+    if (-Not (Invoke-WebRequestWithRetry -Uri "https://raw.githubusercontent.com/memononen/nanosvg/master/src/nanosvgrast.h" -OutFile (Join-Path $EXTERNAL_DIR "nanosvgrast.h"))) { exit 1 }
     Write-Host "nanosvg fetched successfully." -ForegroundColor Green
 } else {
     Write-Host "nanosvg already present, skipping." -ForegroundColor Green
